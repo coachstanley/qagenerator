@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYS AI 智能考卷生成器 (HKDSE 詳盡情境版)</title>
+    <title>CYS AI 智能考卷生成器</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- 📚 核心解析與 Word 匯出庫 -->
@@ -18,8 +18,8 @@
         
         <!-- 頂部標題區 -->
         <div class="text-center mb-6 sm:mb-10">
-            <h1 class="text-2xl sm:text-4xl font-extrabold text-indigo-600 mb-2">🏛️ CYS 智能 HKDSE 考卷生成系統</h1>
-            <p class="text-slate-500 font-medium text-xs sm:text-base px-2">由張耀宗副校長設計 · 深度結合考評局真實情境個案與詳盡文字表述</p>
+            <h1 class="text-2xl sm:text-4xl font-extrabold text-indigo-600 mb-2">CYS智能考卷生成系統</h1>
+            <p class="text-slate-500 font-medium text-xs sm:text-base px-2">由張耀宗副校長設計 · 深度結合校本及考評局試題設計</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -59,13 +59,13 @@
                     <div>
                         <label class="block text-xs font-semibold mb-1 text-slate-600">學生年級 / 階段</label>
                         <select id="grade" class="w-full p-2 border rounded-lg bg-white text-xs font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
-                            <option value="中一">香港中一 (Sec 1 - 著重生活直觀脈絡)</option>
-                            <option value="中二">香港中二 (Sec 2 - 簡單描述與實務應用)</option>
-                            <option value="中三">香港中三 (Sec 3 - 概念關聯與因果解釋)</option>
-                            <option value="中四">香港中四 (Sec 4 - 高中基礎與技術架構)</option>
-                            <option value="中五">香港中五 (Sec 5 - DSE 跨單元實戰剖析)</option>
-                            <option value="中六">香港中六 (Sec 6 - 考評局高難度個案模擬)</option>
-                            <option value="DSE程度" selected>DSE程度 (100% 官方標準真實情境深度)</option>
+                            <option value="中一">中一 (Sec 1 - 著重生活直觀脈絡)</option>
+                            <option value="中二">中二 (Sec 2 - 簡單描述與實務應用)</option>
+                            <option value="中三">中三 (Sec 3 - 概念關聯與因果解釋)</option>
+                            <option value="中四">中四 (Sec 4 - 高中基礎與技術架構)</option>
+                            <option value="中五">中五 (Sec 5 - DSE 跨單元實戰剖析)</option>
+                            <option value="中六">中六 (Sec 6 - 考評局高難度個案模擬)</option>
+                            <option value="DSE程度" selected>DSE程度</option>
                         </select>
                     </div>
 
@@ -582,7 +582,7 @@
 
             const docChildren = [
                 new Paragraph({
-                    text: "香港中學文憑考試 模擬評估試卷" + (isTeacherVersion ? " (評分參考 / Marking Scheme)" : " (學生試卷)"),
+                    text: "模擬評估試卷" + (isTeacherVersion ? " (評分參考 / Marking Scheme)" : " (學生試卷)"),
                     heading: HeadingLevel.HEADING_1,
                     alignment: AlignmentType.CENTER
                 }),
@@ -689,7 +689,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = isTeacherVersion ? "HKDSE_模擬試卷_評分參考(Marking).docx" : "HKDSE_模擬試卷_學生版.docx";
+            a.download = isTeacherVersion ? "評分參考(Marking).docx" : "模擬試卷_學生版.docx";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
