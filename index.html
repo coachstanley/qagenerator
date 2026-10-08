@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYS AI 智能考卷生成器 (HKDSE 互動版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 📚 核心解析與 Word 匯出庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.iife.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <div class="max-w-7xl mx-auto py-6 px-3 sm:py-10 sm:px-6">
+        
+        <!-- 頂部標題區 -->
+        <div class="text-center mb-6 sm:mb-10">
+            <h1 class="text-2xl sm:text-4xl font-extrabold text-indigo-600 mb-2">🏛️ CYS 智能 HKDSE 考卷生成與精挑系統</h1>
+            <p class="text-slate-500 font-medium text-xs sm:text-base px-2">由張耀宗副校長設計 · 支援「保留好題、汰換差題」互動篩選與多層次結構題</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+
+            <!-- 左側設定與教材管理面板 -->
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4 sm:space-y-5 h-fit">
+                <h2 class="text-sm sm:text-base font-bold text-slate-700 border-b pb-2">📂 1. 上載教材 (支援多檔案累積)</h2>
+                
+                <input type="file" id="multiFileInput" multiple accept=".pdf,.docx,.pptx,.txt" 
+                       class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border border-dashed border-slate-300 rounded-xl p-2 bg-slate-50">
+
+                <div id="tempFileContainer" class="space-y-1.5 hidden">
+                    <div class="flex justify-between items-center text-xs font-semibold text-slate-600">
+                        <span>待解析檔案清單：</span>
+                        <button id="clearAllBtn" class="text-rose-500 hover:underline text-[11px]">全部清除 ❌</button>
+                    </div>
+                    <div id="tempFileBadges" class="space-y-1 max-h-24 sm:max-h-32 overflow-y-auto"></div>
+                </div>
+
+                <button id="parseBtn" class="w-full bg-slate-200 text-slate-400 font-bold py-2.5 px-3 rounded-xl text-xs transition duration-150 cursor-not-allowed" disabled>
+                    🔍 請先選擇檔案
+                </button>
+
+                <div id="fileListContainer" class="space-y-1.5 hidden border-t pt-3">
+                    <p class="text-xs font-bold text-emerald-700">✅ 已成功載入教材：</p>
+                    <div id="fileBadges" class="space-y-1 max-h-24 sm:max-h-32 overflow-y-auto"></div>
+                </div>
+
+                <div class="flex justify-between items-center text-xs bg-indigo-50 text-indigo-700 p-2.5 rounded-lg">
+                    <span>教材總字數：</span>
+                    <span id="charCount" class="font-bold">0 字</span>
+                </div>
+
+                <h2 class="text-sm sm:text-base font-bold text-slate-700 border-b pb-2 pt-1">⚙️ 2. DSE 考核規格設定</h2>
+                
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-slate-600">題目深度 / 考核難度</label>
+                    <select id="difficulty" class="w-full p-2 border rounded-lg bg-white text-xs">
+                        <option value="基本程度">基本程度 (著重基本知識理解與定位)</option>
+                        <option value="進階程度" selected>進階程度 (DSE 文憑試情境個案與深度推論)</option>
+                        <option value="混合程度">混合程度 (50% 基礎概念 + 50% DSE 實戰)</option>
+                    </select>
+                </div>
+
+                <div class="space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span>多項選擇題 (MC，每題1分)</span>
+                        <input type="number" id="numMc" class="w-14 p-1 border rounded text-center" value="3" min="0">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>是非題 (概念辨析，每題1分)</span>
+                        <input type="number" id="numTf" class="w-14 p-1 border rounded text-center" value="2" min="0">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold text-indigo-700">供詞填空題 (專業術語庫，每題1分)</span>
+                        <input type="number" id="numBlank" class="w-14 p-1 border rounded text-center font-semibold" value="2" min="0">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold text-indigo-700">短問答題 (DSE動詞指引，每題1-4分)</span>
+                        <input type="number" id="numShort" class="w-14 p-1 border rounded text-center font-semibold" value="2" min="0">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold text-indigo-700">長問答題 (多層次結構題，全題約6分)</span>
+                        <input type="number" id="numLong" class="w-14 p-1 border rounded text-center font-semibold" value="1" min="0">
+                    </div>
+                </div>
+
+                <button id="generateBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-150 text-sm">
+                    🚀 生成全新試卷
+                </button>
+            </div>
+
+            <!-- 右側：試卷預覽與 Word 導出 -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-4 sm:p-8 rounded-2xl shadow-sm border border-slate-100 min-h-[500px] flex flex-col justify-between">
+                    
+                    <div>
+                        <!-- 響應式控制列 -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 mb-6 gap-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-base sm:text-xl font-bold text-slate-700">📄 試卷預覽</h2>
+                                <span id="totalScoreBadge" class="bg-indigo-100 text-indigo-800 text-[11px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full hidden">
+                                    📋 全卷總分：<span id="totalScoreValue">0</span> 分
+                                </span>
+                            </div>
+                            
+                            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                <label class="inline-flex items-center cursor-pointer text-xs bg-slate-100 px-2 py-2 rounded-lg border w-full sm:w-auto justify-center sm:justify-start">
+                                    <input type="checkbox" id="showAnswersToggle" class="rounded text-indigo-600 mr-1.5">
+                                    <span class="font-semibold text-slate-700">顯示參考答案及評分要點</span>
+                                </label>
+                                <div class="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+                                    <button id="exportStudentDocx" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] sm:text-xs font-bold py-2 px-2.5 rounded-lg shadow-sm text-center disabled:opacity-50" disabled>
+                                        <span>學生卷 (Word)</span>
+                                                                    </button>
+                                                                    <button id="exportTeacherDocx" class="bg-amber-600 hover:bg-amber-700 text-white text-[11px] sm:text-xs font-bold py-2 px-2.5 rounded-lg shadow-sm text-center disabled:opacity-50" disabled>
+                                        <span>評分參考 (Word)</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="loading" class="hidden text-center py-24">
+                            <div class="animate-spin rounded-full h-10 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                            <p class="text-xs sm:text-sm text-slate-500 font-medium px-4">AI 正在按香港 DSE 規範進行局部汰換出題，請稍候...</p>
+                        </div>
+
+                        <div id="previewArea" class="space-y-6">
+                            <p class="text-center text-slate-400 py-24 text-xs sm:text-sm px-4">尚未載入教材。請於左側選取檔案並點擊「解析」，然後點擊「生成全新試卷」。</p>
+                        </div>
+                    </div>
+
+                    <!-- 🎯 底部 RWD 精挑細選工具列 (當有題目時顯現) -->
+                    <div id="editorToolbar" class="mt-8 pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 hidden">
+                        <div class="text-xs text-slate-500 text-center sm:text-left">
+                            💡 <b>操作提示：</b>您可以剔除不滿意的題目，點擊右側按鈕讓 AI 重新生成並取代它們，已被勾選保留的好題將會被鎖定不動！
+                        </div>
+                        <button id="replaceBtn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-md transition duration-150 flex items-center justify-center space-x-1.5">
+                            <span>🔄 重新生成未勾選題目</span>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        const WORKER_URL = "https://cys-ai-qa.cyc-652.workers.dev";
+        
+        let pendingFiles = [];
+        let parsedMaterials = [];
+        let aggregatedMaterialText = "";
+        let currentQuestions = []; // 儲存當前整套考卷數據
+
+        const fileInput = document.getElementById('multiFileInput');
+        const parseBtn = document.getElementById('parseBtn');
+        const tempFileContainer = document.getElementById('tempFileContainer');
+        const tempFileBadges = document.getElementById('tempFileBadges');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const fileBadges = document.getElementById('fileBadges');
+        const charCount = document.getElementById('charCount');
+        const showAnswersToggle = document.getElementById('showAnswersToggle');
+        const totalScoreBadge = document.getElementById('totalScoreBadge');
+        const totalScoreValue = document.getElementById('totalScoreValue');
+        const editorToolbar = document.getElementById('editorToolbar');
+        const replaceBtn = document.getElementById('replaceBtn');
+
+        // 1. 累積選取檔案
+        fileInput.addEventListener('change', () => {
+            Array.from(fileInput.files).forEach(file => {
+                if (!pendingFiles.some(f => f.name === file.name && f.size === file.size) &&
+                    !parsedMaterials.some(pm => pm.fileName === file.name)) {
+                    pendingFiles.push(file);
+                }
+            });
+            fileInput.value = "";
+            renderPendingList();
+        });
+
+        function renderPendingList() {
+            tempFileBadges.innerHTML = "";
+            if (pendingFiles.length > 0) {
+                tempFileContainer.classList.remove('hidden');
+                parseBtn.disabled = false;
+                parseBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition duration-150 cursor-pointer";
+                parseBtn.innerText = "🔍 開始解析這 " + pendingFiles.length + " 個檔案";
+                pendingFiles.forEach((file, index) => {
+                    const badge = document.createElement('div');
+                    badge.className = "flex justify-between items-center text-xs bg-amber-50 text-amber-900 p-1.5 rounded border border-amber-200";
+                    badge.innerHTML = "<span class='truncate max-w-[80%]'>⏳ 待解析: <b>" + file.name + "</b></span>" +
+                                      "<button onclick='removePendingFile(" + index + ")' class='text-rose-500 font-bold hover:text-rose-700 ml-2'>❌</button>";
+                    tempFileBadges.appendChild(badge);
+                });
+            } else {
+                tempFileContainer.classList.add('hidden');
+                parseBtn.disabled = true;
+                parseBtn.className = "w-full bg-slate-200 text-slate-400 font-bold py-2 px-3 rounded-xl text-xs transition duration-150 cursor-not-allowed";
+                parseBtn.innerText = '🔍 請先選擇檔案';
+            }
+        }
+
+        window.removePendingFile = function(index) {
+            pendingFiles.splice(index, 1);
+            renderPendingList();
+        };
+
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+            pendingFiles = [];
+            renderPendingList();
+        });
+
+        // 2. 解析多格式檔案
+        parseBtn.addEventListener('click', async () => {
+            if (!pendingFiles.length) return;
+            fileListContainer.classList.remove('hidden');
+            for (const file of pendingFiles) {
+                const badge = document.createElement('div');
+                badge.className = "flex justify-between items-center text-xs bg-slate-100 p-1.5 rounded border border-slate-200 animate-pulse";
+                badge.innerHTML = "<span>⏳ 正在提取: <b>" + file.name + "...</b></span>";
+                fileBadges.appendChild(badge);
+                try {
+                    let fileText = "";
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    if (ext === 'txt') fileText = await file.text();
+                    else if (ext === 'pdf') fileText = await parsePdf(file);
+                    else if (ext === 'docx') fileText = await parseDocx(file);
+                    else if (ext === 'pptx') fileText = await parsePptx(file);
+                    else throw new Error("不支援格式");
+
+                    parsedMaterials.push({ fileName: file.name, text: fileText });
+                    rebuildAggregatedText();
+                } catch (err) {
+                    badge.className = "flex justify-between items-center text-xs bg-rose-50 text-rose-800 p-1.5 rounded border border-rose-200";
+                    badge.innerHTML = "<span>⚠️ <b>" + file.name + "</b> (失敗: " + err.message + ")</span>";
+                }
+            }
+            pendingFiles = [];
+            renderPendingList();
+            renderParsedList();
+        });
+
+        function rebuildAggregatedText() {
+            aggregatedMaterialText = parsedMaterials.map(m => "\n\n【教材來源：" + m.fileName + "】\n" + m.text).join("");
+            charCount.innerText = aggregatedMaterialText.length + " 字";
+        }
+
+        function renderParsedList() {
+            fileBadges.innerHTML = "";
+            if (parsedMaterials.length > 0) {
+                fileListContainer.classList.remove('hidden');
+                parsedMaterials.forEach((item, index) => {
+                    const badge = document.createElement('div');
+                    badge.className = "flex justify-between items-center text-xs bg-emerald-50 text-emerald-800 p-1.5 rounded border border-emerald-200";
+                    badge.innerHTML = "<span class='truncate max-w-[70%]'>📄 <b>" + item.fileName + "</b></span>" +
+                        "<div class='flex items-center space-x-1.5'>" +
+                            "<span class='bg-emerald-100 text-emerald-800 text-[10px] px-1 py-0.5 rounded'>" + item.text.length + "字</span>" +
+                            "<button onclick='removeParsedMaterial(" + index + ")' class='text-rose-500 font-bold hover:text-rose-700'>❌</button>" +
+                        "</div>";
+                    fileBadges.appendChild(badge);
+                });
+            } else {
+                fileListContainer.classList.add('hidden');
+            }
+            rebuildAggregatedText();
+        }
+
+        window.removeParsedMaterial = function(index) {
+            parsedMaterials.splice(index, 1);
+            renderParsedList();
+        };
+
+        async function parsePdf(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => item.str).join(" ") + "\n";
+            }
+            return fullText;
+        }
+
+        async function parseDocx(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            return result.value;
+        }
+
+        async function parsePptx(file) {
+            const zip = await JSZip.loadAsync(file);
+            let slideTexts = [];
+            const slideFiles = Object.keys(zip.files).filter(name => name.startsWith("ppt/slides/slide") && name.endsWith(".xml"));
+            slideFiles.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            for (const slidePath of slideFiles) {
+                const xmlText = await zip.files[slidePath].async("text");
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+                const textNodes = xmlDoc.querySelectorAll("a\\:t, t");
+                let slideContent = "";
+                textNodes.forEach(node => { slideContent += node.textContent + " "; });
+                if (slideContent.trim()) slideTexts.push(slideContent.trim());
+            }
+            return slideTexts.join("\n");
+        }
+
+        // 3. 呼叫 AI 生成全新 DSE 試卷
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            if (!parsedMaterials.length) {
+                alert("請先上載並完成解析教材！");
+                return;
+            }
+            await fetchQuestions(
+                parseInt(document.getElementById('numMc').value) || 0,
+                parseInt(document.getElementById('numTf').value) || 0,
+                parseInt(document.getElementById('numBlank').value) || 0,
+                parseInt(document.getElementById('numShort').value) || 0,
+                parseInt(document.getElementById('numLong').value) || 0,
+                [] // 全新生成，無已保留題目
+            );
+        });
+
+        // 核心出題請求函數
+        async function fetchQuestions(mc, tf, blank, short, long, excluded) {
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = "";
+            previewArea.classList.add('hidden');
+            totalScoreBadge.classList.add('hidden');
+            editorToolbar.classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+
+            try {
+                const response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: aggregatedMaterialText,
+                        difficulty: document.getElementById('difficulty').value,
+                        mcCount: mc,
+                        tfCount: tf,
+                        blankCount: blank,
+                        shortCount: short,
+                        longCount: long,
+                        excludedQuestions: excluded // 將已保留的考點上下文傳送，防止重複出題
+                    })
+                });
+
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error || "後端生成失敗");
+
+                const parsed = JSON.parse(result.data);
+                const rawNewQuestions = parsed.questions || [];
+
+                const formattedNewQuestions = rawNewQuestions.map(q => {
+                    const type = (q.type || q.Type || "").toUpperCase();
+                    if (type === 'MC' || type === 'TF' || type === 'BLANK') {
+                        q.score = 1;
+                    } else if (type === 'SHORT') {
+                        const parsedScore = parseInt(q.score) || 3;
+                        q.score = Math.min(4, Math.max(1, parsedScore));
+                    } else if (type === 'LONG') {
+                        q.score = 6; // 結構性題目鎖定 6 分
+                    } else {
+                        q.score = 2;
+                    }
+                    q.keep = true; // 預設新題目全部保留
+                    return q;
+                });
+
+                // 💡 互動融合：如果是「局部重新生成」，則將「保留的好題」與「新生成的替換題」進行合併
+                if (excluded.length > 0) {
+                    const keptList = currentQuestions.filter(q => q.keep);
+                    currentQuestions = keptList.concat(formattedNewQuestions);
+                } else {
+                    currentQuestions = formattedNewQuestions;
+                }
+
+                renderPreview(currentQuestions);
+
+                document.getElementById('exportStudentDocx').disabled = false;
+                document.getElementById('exportTeacherDocx').disabled = false;
+
+            } catch (err) {
+                console.error(err);
+                previewArea.innerHTML = "<p class='text-center text-rose-500 py-28'>出題失敗：" + err.message + "</p>";
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+                previewArea.classList.remove('hidden');
+            }
+        }
+
+        // 4. 渲染網頁預覽（內置保留/替換勾選框）
+        function renderPreview(questions) {
+            const container = document.getElementById('previewArea');
+            container.innerHTML = "";
+            if (!questions || !questions.length) {
+                container.innerHTML = "<p class='text-center text-slate-400 py-24 text-xs sm:text-sm px-4'>考卷中目前沒有任何題目。</p>";
+                totalScoreBadge.classList.add('hidden');
+                editorToolbar.classList.add('hidden');
+                return;
+            }
+
+            const showAnswers = showAnswersToggle.checked;
+            let html = "<div class='space-y-6'>";
+            let totalScore = 0;
+            
+            questions.forEach((q, idx) => {
+                const questionType = (q.type || q.Type || "題目").toUpperCase();
+                const questionText = q.questionText || q.question_text || q.question || "請閱讀教材後回答問題";
+                const questionScore = parseInt(q.score) || 1;
+                totalScore += questionScore;
+
+                // 保留核取方塊的 Checked 狀態字串
+                const isChecked = q.keep ? "checked" : "";
+
+                // 核心卡片容器：若取消勾選則加上半透明淡化效果
+                let cardClass = "border-b border-slate-100 pb-5 transition-opacity duration-150 " + (q.keep ? "opacity-100" : "opacity-40");
+
+                let headerHtml = "<div class='flex items-center justify-between gap-1 mb-2'>" +
+                                    "<div class='flex items-center space-x-2.5'>" +
+                                        // 🎯 核心篩選控制：勾選框
+                                        "<input type='checkbox' id='keep_check_" + idx + "' onchange='toggleKeep(" + idx + ")' " + isChecked + " class='w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer'>" +
+                                        "<label for='keep_check_" + idx + "' class='text-[11px] sm:text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded cursor-pointer hover:bg-indigo-100'>第 " + (idx + 1) + " 題 · [" + questionType + "]</label>" +
+                                    "</div>" +
+                                    "<span class='text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded'>" +
+                                        "[" + questionScore + " 分] " + (questionType === 'LONG' ? '(層次分題，每小點1分)' : '') +
+                                    "</span>" +
+                                 "</div>";
+                
+                let questionTextHtml = "<p class='font-bold text-slate-800 text-sm md:text-base leading-relaxed whitespace-pre-line pl-6 sm:pl-7'>" + questionText + "</p>";
+                let optionsHtml = "<div class='pl-6 sm:pl-7'>";
+
+                if (questionType === 'MC' && q.options) {
+                    const validOptions = q.options.slice(0, 4);
+                    optionsHtml += "<div class='grid grid-cols-1 md:grid-cols-2 gap-2 mt-2'>";
+                    validOptions.forEach((opt, optIdx) => {
+                        const label = String.fromCharCode(65 + optIdx);
+                        optionsHtml += "<div class='text-xs md:text-sm bg-slate-50 p-2 rounded border border-slate-200'><b>(" + label + ")</b> " + opt + "</div>";
+                    });
+                    optionsHtml += "</div>";
+                } 
+                else if (questionType === 'TF') {
+                    optionsHtml += "<div class='flex space-x-6 mt-2'>" +
+                        "<span class='text-xs border px-3 py-1.5 rounded bg-slate-50'>⬜ 正確 (True)</span>" +
+                        "<span class='text-xs border px-3 py-1.5 rounded bg-slate-50'>⬜ 錯誤 (False)</span>" +
+                    "</div>";
+                }
+                else if (questionType === 'BLANK') {
+                    if (q.wordBank && q.wordBank.length) {
+                        optionsHtml += "<div class='mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg'>" +
+                            "<p class='text-xs font-bold text-amber-900 mb-1'>【詞庫選項 Word Bank】：</p>" +
+                            "<div class='flex flex-wrap gap-2'>";
+                        q.wordBank.forEach(w => {
+                            optionsHtml += "<span class='bg-white px-2.5 py-1 rounded border text-xs text-amber-800 font-medium'>" + w + "</span>";
+                        });
+                        optionsHtml += "</div></div>";
+                    }
+                }
+                else if (questionType === 'SHORT') {
+                    optionsHtml += "<div class='mt-3 space-y-2'>" +
+                        "<div class='border-b border-dashed border-slate-300 w-full h-5'></div>" +
+                        "<div class='border-b border-dashed border-slate-300 w-full h-5'></div>" +
+                    "</div>";
+                }
+                else if (questionType === 'LONG') {
+                    optionsHtml += "<div class='mt-3 space-y-3'>" +
+                        "<div class='border-b border-dashed border-slate-300 w-full h-5'></div>" +
+                        "<div class='border-b border-dashed border-slate-300 w-full h-5'></div>" +
+                        "<div class='border-b border-dashed border-slate-300 w-full h-5'></div>" +
+                        "<div class='border-b border-dashed border-slate-300 w-full h-5'></div>" +
+                        "<div class='border-b border-dashed border-slate-300 w-full h-5'></div>" +
+                        "<div class='border-b border-dashed border-slate-300 w-full h-5'></div>" +
+                    "</div>";
+                }
+                optionsHtml += "</div>";
+
+                let answerHtml = "";
+                if (showAnswers && (q.answer || q.explanation)) {
+                    answerHtml += "<div class='mt-3 ml-6 sm:ml-7 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs space-y-1 text-emerald-900'>" +
+                        "<p class='whitespace-pre-line'><b>🔑 建議答案：</b>\n" + (q.answer || '無') + "</p>";
+                    if (q.explanation) {
+                        answerHtml += "<p class='whitespace-pre-line mt-1'><b>💡 評分指引 (Marking Scheme)：</b>\n" + q.explanation + "</p>";
+                    }
+                    answerHtml += "</div>";
+                }
+
+                html += "<div class='" + cardClass + "' id='card_wrapper_" + idx + "'>" + headerHtml + questionTextHtml + optionsHtml + answerHtml + "</div>";
+            });
+            
+            html += "</div>";
+            container.innerHTML = html;
+
+            totalScoreValue.innerText = totalScore;
+            totalScoreBadge.classList.remove('hidden');
+            editorToolbar.classList.remove('hidden'); // 展現底部工具欄
+        }
+
+        // 🎯 點選勾選框時，即時變更記憶體狀態與視覺效果
+        window.toggleKeep = function(index) {
+            currentQuestions[index].keep = !currentQuestions[index].keep;
+            const card = document.getElementById("card_wrapper_" + index);
+            if (currentQuestions[index].keep) {
+                card.classList.remove("opacity-40");
+                card.classList.add("opacity-100");
+            } else {
+                card.classList.remove("opacity-100");
+                card.classList.add("opacity-40");
+            }
+        };
+
+        // 🎯 重新生成未勾選（不滿意）的題目
+        replaceBtn.addEventListener('click', async () => {
+            // 篩選出需要重新生成的題型與數量
+            let replaceMc = 0;
+            let replaceTf = 0;
+            let replaceBlank = 0;
+            let replaceShort = 0;
+            let replaceLong = 0;
+
+            const keptQuestions = [];
+            
+            currentQuestions.forEach(q => {
+                if (q.keep) {
+                    // 已保留題目：加入上下文避免重複
+                    keptQuestions.push({ questionText: q.questionText, type: q.type });
+                } else {
+                    // 需要重出題目：按題型累加
+                    const type = q.type.toUpperCase();
+                    if (type === 'MC') replaceMc++;
+                    else if (type === 'TF') replaceTf++;
+                    else if (type === 'BLANK') replaceBlank++;
+                    else if (type === 'SHORT') replaceShort++;
+                    else if (type === 'LONG') replaceLong++;
+                }
+            });
+
+            const totalReplace = replaceMc + replaceTf + replaceBlank + replaceShort + replaceLong;
+            if (totalReplace === 0) {
+                alert("您目前勾選保留了所有題目！請先取消勾選不滿意的題目再點擊此按鈕。");
+                return;
+            }
+
+            if (confirm("AI 將為您重新生成 " + totalReplace + " 道題目以替換不滿意的題目。是否開始？")) {
+                await fetchQuestions(replaceMc, replaceTf, replaceBlank, replaceShort, replaceLong, keptQuestions);
+            }
+        });
+
+        // 5. 匯出至 Microsoft Word
+        async function exportToWord(isTeacherVersion) {
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
+            
+            // 僅匯出當前已被保留的題目 (過濾掉未勾選的廢題)
+            const exportList = currentQuestions.filter(q => q.keep);
+            if (exportList.length === 0) {
+                alert("沒有已保留的題目可供匯出！");
+                return;
+            }
+
+            let totalScore = exportList.reduce((acc, q) => acc + (parseInt(q.score) || 1), 0);
+
+            const docChildren = [
+                new Paragraph({
+                    text: "香港中學文憑考試 模擬評估試卷" + (isTeacherVersion ? " (評分參考 / Marking Scheme)" : " (學生試卷)"),
+                    heading: HeadingLevel.HEADING_1,
+                    alignment: AlignmentType.CENTER
+                }),
+                new Paragraph({
+                    text: isTeacherVersion ? ("【機密文件 · 供教師評卷使用 · 全卷滿分：" + totalScore + " 分】") : ("班別：__________  姓名：__________  學號：__________  得分：_____ / " + totalScore + " 分"),
+                    alignment: AlignmentType.CENTER
+                }),
+                new Paragraph({ text: "\n" })
+            ];
+
+            exportList.forEach((q, idx) => {
+                const questionType = (q.type || q.Type || "題目").toUpperCase();
+                const questionText = q.questionText || q.question_text || q.question || "";
+                const questionScore = parseInt(q.score) || 1;
+
+                docChildren.push(new Paragraph({
+                    children: [
+                        new TextRun({ text: (idx + 1) + ". ", bold: true }),
+                        new TextRun({ text: questionText }),
+                        new TextRun({ 
+                            text: "  (" + questionScore + "分" + (questionType === 'LONG' ? '，每分題1分' : '') + ")", 
+                            bold: true, 
+                            color: "555555" 
+                        })
+                    ]
+                }));
+
+                if (questionType === 'MC' && q.options) {
+                    const validOptions = q.options.slice(0, 4);
+                    validOptions.forEach((opt, optIdx) => {
+                        const label = String.fromCharCode(65 + optIdx);
+                        docChildren.push(new Paragraph({
+                            text: "    (" + label + ") " + opt
+                        }));
+                    });
+                } else if (questionType === 'TF') {
+                    docChildren.push(new Paragraph({
+                        text: "    [   ] 正確 (True)       [   ] 錯誤 (False)"
+                    }));
+                } else if (questionType === 'BLANK' && q.wordBank) {
+                    docChildren.push(new Paragraph({
+                        text: "    【詞庫】：[ " + q.wordBank.join("   |   ") + " ]"
+                    }));
+                } else if (questionType === 'SHORT') {
+                    docChildren.push(new Paragraph({ text: "    答：________________________________________________________" }));
+                    docChildren.push(new Paragraph({ text: "        ________________________________________________________" }));
+                } else if (questionType === 'LONG') {
+                    docChildren.push(new Paragraph({ text: "    答：" }));
+                    for(let i = 0; i < 6; i++) {
+                        docChildren.push(new Paragraph({ text: "    ____________________________________________________________" }));
+                    }
+                }
+
+                if (isTeacherVersion) {
+                    docChildren.push(new Paragraph({
+                        children: [
+                            new TextRun({ text: "    👉 【建議答案】：\n" + (q.answer || '見指引') + " ", bold: true, color: "2E7D32" })
+                        ]
+                    }));
+                    if (q.explanation) {
+                        docChildren.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: "    💡 【考評局評分指引 / Marking Scheme】：\n" + q.explanation, italic: true, color: "1565C0" })
+                            ]
+                        }));
+                    }
+                }
+                docChildren.push(new Paragraph({ text: "" }));
+            });
+
+            const doc = new Document({
+                sections: [{ properties: {}, children: docChildren }]
+            });
+
+            const blob = await Packer.toBlob(doc);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = isTeacherVersion ? "HKDSE_互動模擬試卷_評分參考(Marking).docx" : "HKDSE_互動模擬試卷_學生版.docx";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('exportStudentDocx').addEventListener('click', () => exportToWord(false));
+        document.getElementById('exportTeacherDocx').addEventListener('click', () => exportToWord(true));
+    </script>
+</body>
+</html>
