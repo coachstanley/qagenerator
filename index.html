@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYS AI 智能考卷生成器 (校本及HKDSE程度)</title>
+    <title>CYS AI 智能考卷生成器 (HKDSE 詳盡情境版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- 📚 核心解析與 Word 匯出庫 -->
@@ -18,8 +18,8 @@
         
         <!-- 頂部標題區 -->
         <div class="text-center mb-6 sm:mb-10">
-            <h1 class="text-2xl sm:text-4xl font-extrabold text-indigo-600 mb-2">CYS 智能 HKDSE 考卷生成與精挑系統</h1>
-            <p class="text-slate-500 font-medium text-xs sm:text-base px-2">由張耀宗副校長設計 · 支援結構性分題及靈活多層子分題</p>
+            <h1 class="text-2xl sm:text-4xl font-extrabold text-indigo-600 mb-2">🏛️ CYS 智能 HKDSE 考卷生成系統</h1>
+            <p class="text-slate-500 font-medium text-xs sm:text-base px-2">由張耀宗副校長設計 · 深度結合考評局真實情境個案與詳盡文字表述</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -53,57 +53,57 @@
                     <span id="charCount" class="font-bold">0 字</span>
                 </div>
 
-                <h2 class="text-sm sm:text-base font-bold text-slate-700 border-b pb-2 pt-1">⚙️ 2. 校本及DSE考核規格設定</h2>
+                <h2 class="text-sm sm:text-base font-bold text-slate-700 border-b pb-2 pt-1">⚙️ 2. DSE 考核規格設定</h2>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                     <div>
                         <label class="block text-xs font-semibold mb-1 text-slate-600">學生年級 / 階段</label>
                         <select id="grade" class="w-full p-2 border rounded-lg bg-white text-xs font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500">
-                            <option value="中一">香港中一 (Sec 1 - 著重生活指認)</option>
-                            <option value="中二">香港中二 (Sec 2 - 簡單描述與應用)</option>
-                            <option value="中三">香港中三 (Sec 3 - 概念關聯與解釋)</option>
-                            <option value="中四">香港中四 (Sec 4 - 高中基礎與術語)</option>
-                            <option value="中五">香港中五 (Sec 5 - DSE 跨單元實戰)</option>
-                            <option value="中六">香港中六 (Sec 6 - 考評局高難度模擬)</option>
-                            <option value="DSE程度" selected>DSE程度 (與考評局官方標準100%對齊)</option>
+                            <option value="中一">香港中一 (Sec 1 - 著重生活直觀脈絡)</option>
+                            <option value="中二">香港中二 (Sec 2 - 簡單描述與實務應用)</option>
+                            <option value="中三">香港中三 (Sec 3 - 概念關聯與因果解釋)</option>
+                            <option value="中四">香港中四 (Sec 4 - 高中基礎與技術架構)</option>
+                            <option value="中五">香港中五 (Sec 5 - DSE 跨單元實戰剖析)</option>
+                            <option value="中六">香港中六 (Sec 6 - 考評局高難度個案模擬)</option>
+                            <option value="DSE程度" selected>DSE程度 (100% 官方標準真實情境深度)</option>
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold mb-1 text-slate-600">題目深度 / 考核難度</label>
                         <select id="difficulty" class="w-full p-2 border rounded-lg bg-white text-xs">
-                            <option value="基本程度">基本程度 (著重基本知識理解與定位)</option>
-                            <option value="進階程度" selected>進階程度 (情境個案與深度推論)</option>
-                            <option value="混合程度">混合程度 (50% 基礎概念 + 50% 深度實戰)</option>
+                            <option value="基本程度">基本程度 (著重情境基本知識定位)</option>
+                            <option value="進階程度" selected>進階程度 (深度情境分析與多重限制推論)</option>
+                            <option value="混合程度">混合程度 (50% 基礎認知 + 50% 個案實戰)</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="space-y-2 text-xs">
                     <div class="flex items-center justify-between">
-                        <span>多項選擇題 (MC，每題1分)</span>
+                        <span>多項選擇題 (MC，情境小題，每題1分)</span>
                         <input type="number" id="numMc" class="w-14 p-1 border rounded text-center" value="3" min="0">
                     </div>
                     <div class="flex items-center justify-between">
-                        <span>是非題 (概念辨析，每題1分)</span>
+                        <span>是非題 (情境辨析，每題1分)</span>
                         <input type="number" id="numTf" class="w-14 p-1 border rounded text-center" value="2" min="0">
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="font-semibold text-indigo-700">供詞填空題 (專業術語庫，每題1分)</span>
+                        <span class="font-semibold text-indigo-700">供詞填空題 (專業詞庫，每題1分)</span>
                         <input type="number" id="numBlank" class="w-14 p-1 border rounded text-center font-semibold" value="2" min="0">
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="font-semibold text-indigo-700">短問答題 (DSE動詞指引，每題1-4分)</span>
+                        <span class="font-semibold text-indigo-700">短問答題 (詳盡引導，每題1-4分)</span>
                         <input type="number" id="numShort" class="w-14 p-1 border rounded text-center font-semibold" value="2" min="0">
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="font-semibold text-indigo-700">長問答題 (靈活結構分題，全題約6分)</span>
+                        <span class="font-semibold text-indigo-700">長問答題 (詳盡個案研習，全題約6分)</span>
                         <input type="number" id="numLong" class="w-14 p-1 border rounded text-center font-semibold" value="1" min="0">
                     </div>
                 </div>
 
                 <button id="generateBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-150 text-sm">
-                    🚀 生成全新試卷
+                    🚀 生成全新試卷 (詳盡情境)
                 </button>
             </div>
 
@@ -139,7 +139,7 @@
                         
                         <div id="loading" class="hidden text-center py-24">
                             <div class="animate-spin rounded-full h-10 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                            <p class="text-xs sm:text-sm text-slate-500 font-medium px-4">AI 正在按所選年級深度與 DSE 靈活結構分題標準進行命題，請稍候...</p>
+                            <p class="text-xs sm:text-sm text-slate-500 font-medium px-4">AI 正在深度建構真實生活個案情境、精雕題目文字表述與評分標準，請稍候...</p>
                         </div>
 
                         <div id="previewArea" class="space-y-6">
@@ -405,6 +405,7 @@
             }
         }
 
+        // 4. 渲染網頁預覽（特別優化長篇個案背景閱讀體驗）
         function renderPreview(questions) {
             const container = document.getElementById('previewArea');
             container.innerHTML = "";
@@ -426,7 +427,7 @@
                 totalScore += questionScore;
 
                 const isChecked = q.keep ? "checked" : "";
-                let cardClass = "border-b border-slate-100 pb-5 transition-opacity duration-150 " + (q.keep ? "opacity-100" : "opacity-40");
+                let cardClass = "border-b border-slate-100 pb-6 transition-opacity duration-150 " + (q.keep ? "opacity-100" : "opacity-40");
 
                 let headerHtml = "<div class='flex items-center justify-between gap-1 mb-2'>" +
                                     "<div class='flex items-center space-x-2.5'>" +
@@ -434,11 +435,27 @@
                                         "<label for='keep_check_" + idx + "' class='text-[11px] sm:text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded cursor-pointer hover:bg-indigo-100'>第 " + (idx + 1) + " 題 · [" + questionType + "]</label>" +
                                     "</div>" +
                                     "<span class='text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded'>" +
-                                        "[" + questionScore + " 分] " + (questionType === 'LONG' ? '(含多層子分題，每小題1分)' : '') +
+                                        "[" + questionScore + " 分] " + (questionType === 'LONG' ? '(含詳盡個案研習與子分題)' : '') +
                                     "</span>" +
                                  "</div>";
                 
-                let questionTextHtml = "<p class='font-bold text-slate-800 text-sm md:text-base leading-relaxed whitespace-pre-line pl-6 sm:pl-7'>" + questionText + "</p>";
+                // 💡 若為結構性長題，將個案背景放入雅緻的專屬引言情境卡片中
+                let questionTextHtml = "";
+                if (questionType === 'LONG' && questionText.indexOf("【情境個案") !== -1) {
+                    const parts = questionText.split(/(?=\n\n\([a-z]\))/i);
+                    const caseBackground = parts[0];
+                    const subQuestions = parts.slice(1).join("\n\n");
+
+                    questionTextHtml = "<div class='ml-6 sm:ml-7 mb-3 p-3.5 bg-slate-50 border-l-4 border-indigo-500 rounded-r-lg text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-line'>" +
+                                            caseBackground +
+                                       "</div>" +
+                                       "<div class='ml-6 sm:ml-7 font-bold text-slate-800 text-sm md:text-base leading-relaxed whitespace-pre-line'>" +
+                                            subQuestions +
+                                       "</div>";
+                } else {
+                    questionTextHtml = "<p class='font-bold text-slate-800 text-sm md:text-base leading-relaxed whitespace-pre-line pl-6 sm:pl-7'>" + questionText + "</p>";
+                }
+
                 let optionsHtml = "<div class='pl-6 sm:pl-7'>";
 
                 if (questionType === 'MC' && q.options) {
@@ -446,7 +463,7 @@
                     optionsHtml += "<div class='grid grid-cols-1 md:grid-cols-2 gap-2 mt-2'>";
                     validOptions.forEach((opt, optIdx) => {
                         const label = String.fromCharCode(65 + optIdx);
-                        optionsHtml += "<div class='text-xs md:text-sm bg-slate-50 p-2 rounded border border-slate-200'><b>(" + label + ")</b> " + opt + "</div>";
+                        optionsHtml += "<div class='text-xs md:text-sm bg-slate-50 p-2.5 rounded border border-slate-200'><b>(" + label + ")</b> " + opt + "</div>";
                     });
                     optionsHtml += "</div>";
                 } 
@@ -487,10 +504,10 @@
 
                 let answerHtml = "";
                 if (showAnswers && (q.answer || q.explanation)) {
-                    answerHtml += "<div class='mt-3 ml-6 sm:ml-7 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs space-y-1 text-emerald-900'>" +
-                        "<p class='whitespace-pre-line'><b>🔑 建議答案：</b>\n" + (q.answer || '無') + "</p>";
+                    answerHtml += "<div class='mt-3 ml-6 sm:ml-7 p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs space-y-1.5 text-emerald-900 leading-relaxed'>" +
+                        "<p class='whitespace-pre-line font-medium'><b>🔑 建議答案：</b>\n" + (q.answer || '無') + "</p>";
                     if (q.explanation) {
-                        answerHtml += "<p class='whitespace-pre-line mt-1'><b>💡 評分規準 (Marking Scheme)：</b>\n" + q.explanation + "</p>";
+                        answerHtml += "<p class='whitespace-pre-line mt-1.5 text-emerald-800'><b>💡 考評局評分規準 (Marking Scheme)：</b>\n" + q.explanation + "</p>";
                     }
                     answerHtml += "</div>";
                 }
@@ -551,7 +568,7 @@
             }
         });
 
-        // 5. 匯出至 Microsoft Word (多行段落自動格式化)
+        // 5. 匯出至 Microsoft Word
         async function exportToWord(isTeacherVersion) {
             const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
             
@@ -581,23 +598,22 @@
                 const rawQuestionText = q.questionText || q.question_text || q.question || "";
                 const questionScore = parseInt(q.score) || 1;
 
-                // 拆解多行題幹（特別是長問答的情境案例與子分題），逐行格式化
                 const lines = rawQuestionText.split('\n').filter(line => line.trim() !== '');
 
-                // 第一行：題號標題
+                // 題號與第一行
                 docChildren.push(new Paragraph({
                     children: [
                         new TextRun({ text: (idx + 1) + ". ", bold: true }),
                         new TextRun({ text: (lines[0] || ""), bold: (questionType === 'LONG') }),
                         new TextRun({ 
-                            text: "  (" + questionScore + "分" + (questionType === 'LONG' ? '，含多層分題' : '') + ")", 
+                            text: "  (" + questionScore + "分" + (questionType === 'LONG' ? '，含個案與分題' : '') + ")", 
                             bold: true, 
                             color: "555555" 
                         })
                     ]
                 }));
 
-                // 若有後續行（子分題或個案內文），逐行輸出段落
+                // 逐行輸出個案內文或子分題
                 for (let i = 1; i < lines.length; i++) {
                     const lineText = lines[i];
                     docChildren.push(new Paragraph({
